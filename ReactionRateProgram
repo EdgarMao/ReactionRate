@@ -1,0 +1,185 @@
+from __future__ import absolute_import
+from __future__ import print_function
+import random
+import math
+import numpy
+import matplotlib.pyplot as plt
+from six.moves import range
+
+t = 0
+dt = 0.1
+T = 300.0
+k = 1.38*10**(-23)
+#environment conditions
+P = 10.0**5 #Atomsphereic Pressure
+V = 1.0*10**(-3)
+#actual mass of particles
+mx = 2.66*10**(-22)
+my = 2.82*10**(-22)
+#number of particles
+#formula for caculation: P*V/k/T/2
+nx = P*V/k/T/2
+ny = P*V/k/T/2
+nz = 0.0
+nw = 0.0
+n = nx + ny + nz + nw
+trials = 10**6
+#distance where reactions can happen between particles (m)
+d = 10**(-9)
+#side of box (m)
+sidelength = 0.3*10**(-8)
+data = []
+time = []
+numx = []
+#activation energy
+E = math.sqrt(T*k/mx)**2*mx
+
+while t < 15:
+	#print("current time:", t)
+	data = data + [[t,nz]]
+	#Record of time (for graphing)
+	time = time + [t]
+	#Record of number of z [particles] (for graphing)
+	numx = numx + [nx]
+	pnx = nx/n
+	pny = ny/n
+	pnz = nz/n
+	pnw = nw/n
+	reactions = 0.0
+	for i in range(trials):
+		reactionWillHappen=False
+		random1 = random.random()
+		random2 = random.random()
+		if (random1 < pnx and random2 > 1 - pny) or (random2 < pnx and random1 > 1 - pny):
+			#find right particles, stimulate reaction
+			reactionWillHappen = True
+			x1 = sidelength * random.random()
+			y1 = sidelength * random.random()
+			z1 = sidelength * random.random()
+			x2 = sidelength * random.random()
+			y2 = sidelength * random.random()
+			z2 = sidelength * random.random()
+			if random1 < pnx:
+				m1 = mx
+				m2 = my
+			else:
+				m2 = mx
+				m1 = my
+			#stimulating velocities
+			vx1 = math.sqrt(k*T/m1)*numpy.random.normal(0,1) #have a mean of 0 standard deviation is 1
+			vy1 = math.sqrt(k*T/m1)*numpy.random.normal(0,1)
+			vz1 = math.sqrt(k*T/m1)*numpy.random.normal(0,1)
+			vx2 = math.sqrt(k*T/m2)*numpy.random.normal(0,1)
+			vy2 = math.sqrt(k*T/m2)*numpy.random.normal(0,1)
+			vz2 = math.sqrt(k*T/m2)*numpy.random.normal(0,1)
+			if (x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2 > d**2 :
+				reactionWillHappen = False
+				#print("barrier 2")
+			if(reactionWillHappen):
+				vxcm = (m1 * vx1 + m2 * vx2)/(m1 + m2)
+				vycm = (m1 * vy1 + m2 * vy2)/(m1 + m2)
+				vzcm = (m1 * vz1 + m2 * vz2)/(m1 + m2)
+				# print(m1) 
+				KEcm = 0.5*m1*((vx1-vxcm)**2 + (vy1 - vycm)**2 + (vz1 - vzcm)**2) + 1/2*m2*((vx2 - vxcm)**2 + (vy2-vycm)**2 + (vz2 - vzcm)**2)
+				# print(KEcm)
+				if KEcm < E:
+					reactionWillHappen = False
+					#print("not enough energy (barrier 3)")
+				if(reactionWillHappen):
+					reactions = reactions + 1.0
+					#print("reaction happens")
+	nx = nx-(reactions/trials)*n*(n-1)*(sidelength**3/V)
+	ny = ny-(reactions/trials)*n*(n-1)*(sidelength**3/V)
+	nz = nz+(reactions/trials)*n*(n-1)*(sidelength**3/V)
+	nw = nw+(reactions/trials)*n*(n-1)*(sidelength**3/V)
+	t = t + dt
+	#print(nx)
+
+#print(data)
+#print(time)
+#print(numx)
+
+# Graph number of x as a function of time
+def graph1():
+	plt.figure('nx')
+	plt.title('Number of x as a function of time')
+	plt.plot(time, numx, color = '#377EB8')
+	'''
+	plt.xlim(xmax=2000)
+	plt.xlim(xmin=0)
+	plt.ylim(ymax=2000)
+	plt.ylim(ymin=0)
+	'''
+	plt.xlabel('t [s]')
+	plt.ylabel('nx')
+	plt.grid(True)
+	plt.show()
+
+graph1()
+
+
+# Graph the derivative of the previous function as a function of time
+dxdt = []
+
+for i in range(1, len(numx) - 1):
+	dxdt_inst = 0.5 * ((numx[i] - numx[i - 1]) / (time[i] - time[i - 1]) + (numx[i + 1] - numx[i]) / (time[i + 1] - time[i]))
+	dxdt.append(dxdt_inst)
+
+del(numx[0])
+del(numx[-1])
+del(time[0])
+del(time[-1])
+
+def graph2():
+	plt.figure('dx/dt')
+	plt.title('dx/dt as a function of time')
+	plt.plot(time, dxdt, color = '#377EB8')
+	'''
+	plt.xlim(xmax=2000)
+	plt.xlim(xmin=0)
+	plt.ylim(ymax=2000)
+	plt.ylim(ymin=0)
+	'''
+	plt.xlabel('t [s]')
+	plt.ylabel('dx/dt')
+	plt.grid(True)
+	plt.show()
+
+graph2()
+
+# Graph the derivative as a function of the amount of particles
+# Find the concentration of particle x
+concent_x = []
+for i in range(len(numx)):
+	temp_concent = numx[i] / (6.02*10**23) / V
+	concent_x.append(temp_concent)
+
+# Get the ln of numx and dxdt with its best fit line
+ln_numx = []
+for i in range(len(numx)):
+	temp_numx = math.log(abs(numx[i]))
+	ln_numx.append(temp_numx)
+
+ln_dxdt = []
+for i in range(len(dxdt)):
+	temp_dxdt = math.log(abs(dxdt[i]))
+	ln_dxdt.append(temp_dxdt)
+
+def graph3():
+	plt.figure('ln(dx/dt)')
+	plt.title('ln(dx/dt) as a function of ln(nx)')
+	plt.plot(ln_numx, ln_dxdt, color = '#377EB8')
+	plt.plot(numpy.unique(ln_numx), numpy.poly1d(numpy.polyfit(ln_numx, ln_dxdt, 1))(numpy.unique(ln_numx)), color='peru')
+	'''
+	plt.xlim(xmax=2000)
+	plt.xlim(xmin=0)
+	plt.ylim(ymax=2000)
+	plt.ylim(ymin=0)
+	'''
+	plt.xlabel('ln(nx)')
+	plt.ylabel('dx/dt')
+	plt.grid(True)
+	plt.show()
+
+graph3()
+print(numpy.poly1d(numpy.polyfit(ln_numx, ln_dxdt, 1)))
