@@ -1,0 +1,4 @@
+'''Hey! This is a Edgar Mao's high school Chemistry/Physics project. 
+This program simulates the reaction of a given amount of particles in a confined space with given volume.
+The programmer identifies the molecules as small particles, the reaction will happen when a particle of reactant A collides with a particle of reactant B with enough momentum.
+Collison, in this case, is defined as the distance between two partcles being smaller than an arbitrary parameter.'''
